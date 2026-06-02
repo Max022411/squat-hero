@@ -207,12 +207,12 @@ const defaultData={name:"勇者",coins:3000,stage:1,score:0,energy:0,combo:0,squ
 {id:12,type:"armor",name:"白銀聖甲",icon:"silverArmor",rarity:"史詩",attack:5,defense:36,cost:3000,owned:false},
 {id:13,type:"boots",name:"疾風聖靴",icon:"guardianBoot",rarity:"史詩",attack:12,defense:14,cost:2400,owned:false}
 ],gachaItems:[{id:101,type:"weapon",name:"雷霆聖劍",icon:"holySword",rarity:"史詩",attack:28,defense:0,owned:false},{id:102,type:"armor",name:"龍鱗重甲",icon:"dragonArmor",rarity:"史詩",attack:4,defense:30,owned:false},{id:103,type:"weapon",name:"星界王劍",icon:"galaxySword",rarity:"傳說",attack:50,defense:8,owned:false},{id:104,type:"boots",name:"幻影戰靴",icon:"featherBoot",rarity:"稀有",attack:10,defense:8,owned:false}]};
-let data=JSON.parse(localStorage.getItem("squatRPG_v7"))||structuredClone(defaultData);
+let data=JSON.parse(localStorage.getItem("squatRPG_v8"))||structuredClone(defaultData);
 let bossHp=100,maxHp=100,poseStarted=false,squatState="up",lastAttackTime=0,confirmCallback=null;
 const screens=["homeScreen","loginScreen","lobbyScreen","mapScreen","petScreen","roleScreen","equipSelectScreen","shopScreen","gachaScreen","dailyScreen","gameScreen"];
 
 function bootIcons(){document.getElementById("homeLogo").innerHTML=iconSvg("sword");document.getElementById("loginLogo").innerHTML=iconSvg("armor");document.getElementById("smallSword").innerHTML=iconSvg("sword");document.getElementById("battleSword").innerHTML=iconSvg("sword");document.getElementById("heroKnight").innerHTML=iconSvg("knight");document.getElementById("battleKnight").innerHTML=iconSvg("knight");document.getElementById("roleKnightIcon").innerHTML=iconSvg("knight");document.getElementById("gachaIcon").innerHTML=iconSvg("sword");}
-function save(){localStorage.setItem("squatRPG_v7",JSON.stringify(data));refreshTop();}
+function save(){localStorage.setItem("squatRPG_v8",JSON.stringify(data));refreshTop();}
 function show(id){screens.forEach(s=>document.getElementById(s).classList.remove("active"));document.getElementById(id).classList.add("active");refreshTop();}
 function modal(title,text,icon="sword"){document.getElementById("modalTitle").textContent=title;document.getElementById("modalText").innerHTML=text;document.getElementById("modalIcon").innerHTML=iconSvg(icon);document.getElementById("modalActions").innerHTML=`<button class="main-btn" onclick="closeModal()">確認</button>`;document.getElementById("modalMask").classList.add("show");}
 function confirmModal(title,text,icon,onConfirm){confirmCallback=onConfirm;document.getElementById("modalTitle").textContent=title;document.getElementById("modalText").innerHTML=text;document.getElementById("modalIcon").innerHTML=iconSvg(icon);document.getElementById("modalActions").innerHTML=`<button class="danger-btn" onclick="closeModal()">取消</button><button class="main-btn" onclick="runConfirm()">確認</button>`;document.getElementById("modalMask").classList.add("show");}
@@ -223,6 +223,12 @@ function refreshTop(){document.getElementById("lobbyName").textContent=data.name
 function allItems(){return [...data.shop,...data.gachaItems]}
 function equipmentBonus(){let atk=0,def=0;Object.values(data.equipment).forEach(id=>{if(!id)return;const item=allItems().find(x=>x.id===id);if(item){atk+=item.attack;def+=item.defense;}});return {atk,def};}
 function activePet(){return data.pets.find(p=>p.active&&p.owned)||data.pets[0];}
+function updateBattlePet(){
+  const pet=activePet();
+  const battlePet=document.getElementById("battlePet");
+  if(!battlePet)return;
+  battlePet.innerHTML=iconSvg(pet.icon);
+}
 function petElementClass(p){
   if(p.icon==="petFire")return "fire";
   if(p.icon==="petMoon")return "moon";
@@ -288,7 +294,7 @@ function today(){return new Date().toISOString().slice(0,10);}
 function openDaily(){const rewards=[100,150,250,400,600,900,"史詩焰火狐"];const box=document.getElementById("dailyList");box.innerHTML="";rewards.forEach((r,i)=>{const day=i+1;const div=document.createElement("div");div.className="daily-box";if(day===data.dailyDay)div.classList.add("current");if(day<data.dailyDay)div.classList.add("claimed");div.innerHTML=`${day===data.dailyDay?'<div class="daily-shine"></div>':''}<div class="daily-day">DAY ${day}</div><div class="daily-reward">${day===7?miniIcon("petFire"):"🪙"}</div><div>${r}</div>`;box.appendChild(div);});show("dailyScreen");}
 function claimDaily(){if(data.lastClaim===today()){modal("今日已領取","明天再回來領取下一份獎勵。","petFire");return;}const rewards=[100,150,250,400,600,900,0];const day=Math.min(data.dailyDay,7);if(day===7){data.pets[1].owned=true;modal("第七天特別獎勵","獲得史詩寵物：焰火狐！<br>攻擊 +25，防禦 +4","petFire");}else{data.coins+=rewards[day-1];modal("簽到成功",`獲得 ${rewards[day-1]} 金幣！`,"sword");}data.dailyDay=day===7?1:day+1;data.lastClaim=today();save();openDaily();}
 
-function startBattle(){const elite=data.stage%10===0;maxHp=elite?240:100+data.stage*10;bossHp=maxHp;document.getElementById("stageText").textContent="STAGE "+data.stage;document.getElementById("monster").textContent=elite?"👹":"👾";document.getElementById("enemyName").textContent=elite?"ELITE HP":"ENEMY HP";updateBattleUI();show("gameScreen");renderBattlePet();if(!poseStarted){poseStarted=true;startPose();}}
+function startBattle(){const elite=data.stage%10===0;maxHp=elite?240:100+data.stage*10;bossHp=maxHp;document.getElementById("stageText").textContent="STAGE "+data.stage;document.getElementById("monster").textContent=elite?"👹":"👾";document.getElementById("enemyName").textContent=elite?"ELITE HP":"ENEMY HP";updateBattleUI();show("gameScreen");renderBattlePet();updateBattlePet();if(!poseStarted){poseStarted=true;startPose();}}
 function totalAttack(){const pet=activePet();const bonus=equipmentBonus();return data.roleAttack+bonus.atk+pet.attack;}
 function attack(){const damage=totalAttack()+(data.combo%5===4?30:0);bossHp-=damage;data.score+=10;data.energy++;data.combo++;data.squat++;data.coins+=5;document.getElementById("floatText").textContent=data.combo%5===0?"CRITICAL!":"SLASH!";playEffect();if(bossHp<=0){data.coins+=data.stage*20;data.stage++;data.combo=0;save();modal("關卡通過",`獲得 ${((data.stage-1)*20)} 金幣通關獎勵！`,"sword");renderMap();show("mapScreen");return;}save();updateBattleUI();}
 function updateBattleUI(){document.getElementById("score").textContent=data.score;document.getElementById("energy").textContent=data.energy;document.getElementById("squatCount").textContent=data.squat;document.getElementById("combo").textContent="COMBO x"+data.combo;document.getElementById("hpText").textContent=Math.max(0,bossHp)+" / "+maxHp;document.getElementById("hpFill").style.width=Math.max(0,bossHp/maxHp*100)+"%";}
