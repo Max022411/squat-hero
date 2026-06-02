@@ -94,6 +94,52 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}v
 @keyframes boom{0%{transform:translateX(-50%) scale(.3);opacity:1}100%{transform:translateX(-50%) scale(2.2);opacity:0}}
 @keyframes floatText{0%{transform:translate(-50%,20px);opacity:0}40%{opacity:1}100%{transform:translate(-50%,-55px);opacity:0}}
 @keyframes shine{0%{transform:translateX(-100%) rotate(25deg)}60%{transform:translateX(100%) rotate(25deg)}100%{transform:translateX(100%) rotate(25deg)}}
+  .battle-pet{
+  position:absolute;
+  left:18px;
+  bottom:82px;
+  width:96px;
+  height:96px;
+  z-index:20;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:26px;
+  background:rgba(15,23,42,.55);
+  border:1px solid rgba(255,255,255,.16);
+  animation:petIdle 1.8s infinite ease-in-out;
+  filter:drop-shadow(0 0 18px rgba(255,212,0,.75));
+}
+
+.battle-pet svg{
+  width:88px;
+  height:88px;
+}
+
+.battle-pet.petAttack{
+  animation:petAttack .55s ease-in-out;
+}
+
+@keyframes petIdle{
+  0%,100%{
+    transform:translateY(0) scale(1);
+  }
+  50%{
+    transform:translateY(-8px) scale(1.05);
+  }
+}
+
+@keyframes petAttack{
+  0%{
+    transform:translate(0,0) scale(1);
+  }
+  45%{
+    transform:translate(110px,-70px) scale(1.25);
+  }
+  100%{
+    transform:translate(0,0) scale(1);
+  }
+}
 </style>
 </head>
 
