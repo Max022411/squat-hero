@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>深蹲打怪 RPG</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+
+<style>
+:root{--bg:#050918;--card:#0f172a;--blue:#00d9ff;--gold:#ffd400;--red:#ff3355;--muted:#94a3b8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:white;font-family:"Microsoft JhengHei",Arial,sans-serif}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex}
+.center{justify-content:center;align-items:center;text-align:center;background:radial-gradient(circle at 50% 25%,rgba(0,217,255,.25),transparent 30%),radial-gradient(circle at 80% 80%,rgba(255,212,0,.12),transparent 25%),linear-gradient(#050918,#02040d)}
+.app-bg{justify-content:center;background:radial-gradient(circle at 20% 10%,rgba(0,217,255,.18),transparent 30%),radial-gradient(circle at 80% 80%,rgba(255,214,10,.12),transparent 26%),linear-gradient(#050918,#07111f)}
+.phone{width:100%;max-width:430px;padding:18px}
+.logo{width:88px;height:88px;margin:0 auto 24px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#00d9ff,#3b82f6);font-size:44px;box-shadow:0 0 34px rgba(0,217,255,.6)}
+.logo svg{width:68px;height:68px}
+h1{margin:0;font-size:42px;letter-spacing:6px}
+.subtitle{color:var(--blue);letter-spacing:4px;margin:18px 0 50px}
+button{border:none;cursor:pointer;font-family:inherit}
+.main-btn{width:230px;height:62px;border-radius:40px;background:linear-gradient(135deg,#16c7f3,#3b82f6);color:white;font-size:22px;font-weight:bold;box-shadow:0 0 24px rgba(0,217,255,.35)}
+.back-btn{margin-top:16px;background:rgba(15,23,42,.9);border:1px solid rgba(255,255,255,.14);color:#cbd5e1;padding:12px 22px;border-radius:20px}
+.small-btn{background:linear-gradient(135deg,#facc15,#f97316);color:#111827;font-weight:bold;padding:10px 16px;border-radius:999px}
+.blue-btn{background:linear-gradient(135deg,#06b6d4,#3b82f6);color:white;font-weight:bold;padding:10px 16px;border-radius:999px}
+.danger-btn{background:rgba(255,51,85,.15);border:1px solid rgba(255,51,85,.35);color:#fecdd3;font-weight:bold;padding:10px 16px;border-radius:999px}
+input{width:88%;height:60px;border-radius:18px;background:#111827;border:1px solid rgba(255,255,255,.25);color:white;text-align:center;font-size:20px;margin:30px 0 24px}
+.top-user,.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.user-left{display:flex;gap:10px;align-items:center}
+.avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#00d9ff,#3b82f6);display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px rgba(0,217,255,.45)}
+.avatar svg{width:34px;height:34px}
+.name{font-size:18px;font-weight:bold}.level{font-size:12px;color:var(--blue)}
+.coin{background:rgba(15,23,42,.9);border:1px solid rgba(255,255,255,.12);padding:9px 14px;border-radius:18px;color:var(--gold);font-weight:bold}
+.lobby-hero{position:relative;height:210px;border-radius:32px;padding:22px;overflow:hidden;background:radial-gradient(circle at 72% 40%,rgba(0,217,255,.22),transparent 32%),linear-gradient(135deg,rgba(15,23,42,.96),rgba(30,41,59,.88));border:1px solid rgba(255,255,255,.13);box-shadow:0 0 30px rgba(0,0,0,.35)}
+.lobby-hero h2{margin:0;font-size:30px;color:var(--gold)}.lobby-hero p{width:58%;color:#cbd5e1;line-height:1.5}
+.hero-knight{position:absolute;right:14px;bottom:4px;width:132px;height:156px}.hero-knight svg{width:132px;height:156px}
+.menu-grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.menu-card,.feature-card{border-radius:26px;padding:16px;background:radial-gradient(circle at 80% 20%,rgba(0,217,255,.16),transparent 30%),rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.12);box-shadow:0 0 20px rgba(0,0,0,.25)}
+.menu-card{height:118px}.menu-icon{font-size:34px;margin-bottom:8px}.menu-title{font-size:20px;font-weight:bold}.menu-desc{font-size:12px;color:#94a3b8;margin-top:5px}
+.page-title{text-align:center;color:var(--gold);font-size:30px;font-weight:bold;margin:8px 0 18px}
+.feature-card{margin-bottom:14px;text-align:center;position:relative;overflow:hidden}.feature-card p{color:#cbd5e1;line-height:1.6}
+.card-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;flex-wrap:wrap}
+.badge{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;background:rgba(0,217,255,.15);color:#67e8f9}
+.rare{color:#a78bfa}.epic{color:#facc15}.legend{color:#fb7185}.normal{color:#cbd5e1}
+.shop-section-title{margin:18px 0 10px;color:#ffd400;font-size:20px;font-weight:bold;text-align:left}
+.shop-section-title span{font-size:12px;color:#94a3b8;font-weight:normal}
+.common-frame{border-color:rgba(203,213,225,.35)}
+
+.stat-line{display:flex;justify-content:space-between;gap:8px;background:rgba(255,255,255,.06);border-radius:14px;padding:9px 12px;margin:8px 0;color:#e5e7eb}
+.price{color:#ffd400;font-weight:bold}
+
+.icon-box{width:128px;height:128px;margin:0 auto 12px;border-radius:30px;background:radial-gradient(circle at 50% 25%,rgba(255,255,255,.18),transparent 25%),linear-gradient(145deg,#0f172a,#1e293b);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;box-shadow:0 0 26px rgba(0,217,255,.12)}
+.icon-box svg{width:104px;height:104px;filter:drop-shadow(0 0 12px rgba(0,217,255,.35))}
+.rare-frame{border-color:rgba(167,139,250,.55);box-shadow:0 0 26px rgba(167,139,250,.35)}
+.epic-frame{border-color:rgba(250,204,21,.65);box-shadow:0 0 34px rgba(250,204,21,.45),inset 0 0 18px rgba(249,115,22,.15)}
+.legend-frame{border-color:rgba(251,113,133,.75);box-shadow:0 0 42px rgba(251,113,133,.58),inset 0 0 22px rgba(250,204,21,.18)}
+.pet-blue{background:radial-gradient(circle at 50% 20%,rgba(103,232,249,.28),transparent 36%),linear-gradient(145deg,#0f172a,#12365c)}
+.pet-fire{background:radial-gradient(circle at 50% 20%,rgba(251,146,60,.42),transparent 38%),linear-gradient(145deg,#1f1212,#5b1515)}
+.pet-moon{background:radial-gradient(circle at 50% 20%,rgba(167,139,250,.42),transparent 38%),linear-gradient(145deg,#17112a,#312e81)}
+.equip-slot{border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:14px;background:rgba(15,23,42,.9);margin-bottom:12px;text-align:left}
+.equip-slot-title{display:flex;justify-content:space-between;align-items:center;color:#ffd400;font-weight:bold;margin-bottom:8px}
+.equip-item-row{display:flex;gap:10px;align-items:center;margin-top:8px}
+.mini-icon{width:50px;height:50px;border-radius:15px;background:#111827;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.12)}
+.mini-icon svg{width:38px;height:38px}
+
+.daily-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.daily-box{min-height:126px;border-radius:24px;padding:14px;background:linear-gradient(145deg,rgba(15,23,42,.95),rgba(30,41,59,.9));border:1px solid rgba(255,255,255,.12);text-align:center;position:relative;overflow:hidden}
+.daily-box.current{border-color:#ffd400;box-shadow:0 0 24px rgba(255,212,0,.45)}.daily-box.claimed{opacity:.55}.daily-day{color:#ffd400;font-weight:bold}.daily-reward{font-size:24px;margin:10px 0}
+.daily-shine{position:absolute;inset:-50%;background:linear-gradient(120deg,transparent,rgba(255,255,255,.16),transparent);transform:rotate(25deg);animation:shine 3s infinite}
+
+.map{position:relative;height:620px;border-radius:32px;background:linear-gradient(180deg,rgba(15,23,42,.95),rgba(3,7,18,.95));border:1px solid rgba(255,255,255,.14);overflow:hidden}
+.path-line{position:absolute;width:5px;background:linear-gradient(#00d9ff,#ffd400,#ff3355);opacity:.45;left:50%;top:42px;bottom:42px;transform:translateX(-50%)}
+.stage-node{position:absolute;width:58px;height:58px;border-radius:50%;background:#111827;border:3px solid #00d9ff;display:flex;align-items:center;justify-content:center;font-weight:bold}
+.stage-node.elite{width:76px;height:76px;border-color:#ff3355;background:#3b0a20}.stage-node.current{border-color:#ffd400;box-shadow:0 0 28px rgba(255,212,0,.8)}
+.game{width:100%;max-width:430px;padding:14px}#stageText{color:#ffd400;font-size:22px;font-weight:bold}
+.battle{position:relative;height:520px;border-radius:28px;overflow:hidden;background:#111827;border:2px solid rgba(255,255,255,.13)}
+video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}video{transform:scaleX(-1)}canvas{z-index:2}
+.monster{position:absolute;top:78px;left:50%;transform:translateX(-50%);font-size:88px;z-index:4}
+.battle-knight{position:absolute;right:12px;bottom:78px;width:120px;height:140px;z-index:5}.battle-knight svg{width:120px;height:140px}
+.effect{position:absolute;top:120px;left:50%;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,#fff176,rgba(255,100,0,.55),transparent 70%);opacity:0;z-index:6}
+.effect.show{animation:boom .5s}.float{position:absolute;top:105px;left:50%;z-index:7;color:#ffd400;font-size:34px;font-weight:bold;opacity:0;text-shadow:0 0 14px #ff6600}.float.show{animation:floatText .75s}
+.panel{margin-top:12px;padding:18px;border-radius:24px;background:#10172a}.stats{display:flex;justify-content:space-around;text-align:center}.stats strong{color:#ffd400;font-size:24px}
+.combo{text-align:center;color:#ffd400;font-size:26px;font-weight:bold;margin:8px 0}.hp-title{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px}
+.hp-bar{height:14px;background:#1e293b;border-radius:20px;overflow:hidden}#hpFill{height:100%;width:100%;background:linear-gradient(90deg,#4ade80,#00d4ff)}
+.debug{text-align:center;color:#94a3b8;font-size:12px;margin-top:8px}
+
+.modal-mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.68);z-index:99;align-items:center;justify-content:center;padding:20px}
+.modal-mask.show{display:flex}.modal{width:100%;max-width:380px;border-radius:30px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 0,rgba(0,217,255,.2),transparent 36%),linear-gradient(180deg,#111827,#020617);border:1px solid rgba(255,255,255,.16);box-shadow:0 0 40px rgba(0,0,0,.6)}
+.modal h2{color:#ffd400;margin:10px 0}.modal p{color:#cbd5e1;line-height:1.6}.modal-actions{display:flex;gap:10px;justify-content:center;margin-top:14px}
+@keyframes boom{0%{transform:translateX(-50%) scale(.3);opacity:1}100%{transform:translateX(-50%) scale(2.2);opacity:0}}
+@keyframes floatText{0%{transform:translate(-50%,20px);opacity:0}40%{opacity:1}100%{transform:translate(-50%,-55px);opacity:0}}
+@keyframes shine{0%{transform:translateX(-100%) rotate(25deg)}60%{transform:translateX(100%) rotate(25deg)}100%{transform:translateX(100%) rotate(25deg)}}
+</style>
+</head>
+
+<body>
+<section id="homeScreen" class="screen active center">
+  <div><div class="logo" id="homeLogo"></div><h1>深蹲打怪</h1><div class="subtitle">SQUAT HERO ADVENTURE</div><button class="main-btn" onclick="show('loginScreen')">開始冒險</button></div>
+</section>
+<section id="loginScreen" class="screen center">
+  <div><div class="logo" id="loginLogo"></div><h1>勇者登入</h1><input id="nameInput" placeholder="輸入勇者名稱..." maxlength="12"><br><button class="main-btn" onclick="login()">出發！</button></div>
+</section>
+
+<section id="lobbyScreen" class="screen app-bg">
+  <div class="phone">
+    <div class="top-user">
+      <div class="user-left"><div class="avatar" id="smallSword"></div><div><div id="lobbyName" class="name">勇者</div><div id="playerLevelText" class="level">LV.1 見習騎士</div></div></div>
+      <div id="coinText" class="coin">🪙 1200</div>
+    </div>
+    <div class="lobby-hero"><h2>今日冒險</h2><p>深蹲累積能量，培養寵物，打造裝備，突破地城。</p><div class="hero-knight" id="heroKnight"></div></div>
+    <div class="menu-grid">
+      <div class="menu-card" onclick="openMap()"><div class="menu-icon">🗺️</div><div class="menu-title">關卡</div><div class="menu-desc">探險地圖</div></div>
+      <div class="menu-card" onclick="openPets()"><div class="menu-icon">🐾</div><div class="menu-title">寵物</div><div class="menu-desc">狐狸與貓夥伴</div></div>
+      <div class="menu-card" onclick="openRole()"><div class="menu-icon">🛡️</div><div class="menu-title">角色</div><div class="menu-desc">裝備與升級</div></div>
+      <div class="menu-card" onclick="openShop()"><div class="menu-icon">🛒</div><div class="menu-title">商城</div><div class="menu-desc">基礎裝備</div></div>
+      <div class="menu-card" onclick="openGacha()"><div class="menu-icon">🎁</div><div class="menu-title">測試抽獎</div><div class="menu-desc">不花錢測試</div></div>
+      <div class="menu-card" onclick="openDaily()"><div class="menu-icon">📅</div><div class="menu-title">每日簽到</div><div class="menu-desc">華麗獎勵</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="mapScreen" class="screen app-bg"><div class="phone"><div class="page-title">探險地圖</div><div class="map"><div class="path-line"></div><div id="mapNodes"></div></div><div style="text-align:center;margin-top:20px"><button class="main-btn" onclick="startBattle()">進入關卡</button><br><button class="back-btn" onclick="show('lobbyScreen')">返回大廳</button></div></div></section>
+<section id="petScreen" class="screen app-bg"><div class="phone"><div class="page-title">寵物培養</div><div id="petList"></div><button class="back-btn" onclick="show('lobbyScreen')">返回大廳</button></div></section>
+<section id="roleScreen" class="screen app-bg"><div class="phone"><div class="page-title">角色</div><div class="feature-card"><div class="icon-box" id="roleKnightIcon"></div><h2 id="roleTitle">見習騎士 Lv.1</h2><div id="roleStats"></div><button class="small-btn" onclick="confirmUpgradeRole()">升級角色</button></div><div class="page-title" style="font-size:24px">裝備欄</div><div id="equipmentSlots"></div><button class="back-btn" onclick="show('lobbyScreen')">返回大廳</button></div></section>
+<section id="equipSelectScreen" class="screen app-bg"><div class="phone"><div class="page-title" id="equipSelectTitle">選擇裝備</div><div id="equipSelectList"></div><button class="back-btn" onclick="openRole()">返回角色</button></div></section>
+<section id="shopScreen" class="screen app-bg"><div class="phone"><div class="page-title">商城</div><div class="feature-card"><p>商城只販售基礎裝備；強力裝備要靠抽獎取得。</p></div><div id="shopList"></div><button class="back-btn" onclick="show('lobbyScreen')">返回大廳</button></div></section>
+<section id="gachaScreen" class="screen app-bg"><div class="phone"><div class="page-title">測試抽獎</div><div class="feature-card"><div class="icon-box" id="gachaIcon"></div><h2>限定裝備池</h2><p>測試版不消耗金幣。強力裝備只能從這裡抽到。</p><div class="stat-line"><span>稀有</span><b>65%</b></div><div class="stat-line"><span>史詩</span><b>27%</b></div><div class="stat-line"><span>傳說</span><b>8%</b></div><button class="main-btn" onclick="drawGacha()">抽一次</button><p id="gachaResult"></p></div><button class="back-btn" onclick="show('lobbyScreen')">返回大廳</button></div></section>
+<section id="dailyScreen" class="screen app-bg"><div class="phone"><div class="page-title">每日簽到</div><div class="feature-card"><h2>連續登入獎勵</h2><p>每天領取一次，第 7 天可獲得史詩焰火狐。</p></div><div id="dailyList" class="daily-grid"></div><div style="text-align:center;margin-top:16px"><button class="main-btn" onclick="claimDaily()">領取今日獎勵</button><br><button class="back-btn" onclick="show('lobbyScreen')">返回大廳</button></div></div></section>
+
+<section id="gameScreen" class="screen app-bg">
+  <div class="game">
+    <div class="top"><div class="user-left"><div class="avatar" id="battleSword"></div><div><div id="playerName" class="name">勇者</div><div class="level">LV.1 冒險者</div></div></div><div id="stageText">STAGE 1</div><button class="back-btn" style="margin:0;padding:8px 12px" onclick="show('mapScreen')">返回地圖</button></div>
+    <div class="battle"><video id="video" autoplay playsinline muted></video><canvas id="canvas"></canvas><div id="monster" class="monster">👾</div><div class="battle-knight" id="battleKnight"></div><div class="battle-pet" id="battlePet"></div><div id="elementEffect" class="element-effect light"></div><div id="effect" class="effect"></div><div id="floatText" class="float">HIT!</div></div>
+    <div class="panel"><div class="stats"><div><div>SCORE</div><strong id="score">0</strong></div><div><div>ENERGY</div><strong id="energy">0</strong></div><div><div>SQUAT</div><strong id="squatCount">0</strong></div></div><div id="combo" class="combo">COMBO x0</div><div class="hp-title"><span id="enemyName">ENEMY HP</span><span id="hpText">100 / 100</span></div><div class="hp-bar"><div id="hpFill"></div></div><div id="debug" class="debug">手機會自動偵測深蹲；電腦可按空白鍵測試</div></div>
+  </div>
+</section>
+
+<div id="modalMask" class="modal-mask"><div class="modal"><div id="modalIcon" class="icon-box"></div><h2 id="modalTitle">標題</h2><p id="modalText">內容</p><div id="modalActions" class="modal-actions"><button class="main-btn" onclick="closeModal()">確認</button></div></div></div>
+
+<script>
+function svgWoodSword(){return `<svg viewBox="0 0 100 100"><path d="M54 10 L62 18 L42 62 L34 54 Z" fill="#b45309" stroke="#fbbf24" stroke-width="3"/><path d="M49 16 L40 54" stroke="#78350f" stroke-width="3"/><rect x="26" y="58" width="38" height="10" rx="5" fill="#92400e"/><rect x="38" y="66" width="13" height="25" rx="6" fill="#451a03"/></svg>`}
+function svgIronSword(){return `<svg viewBox="0 0 100 100"><defs><linearGradient id="ironBlade" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#64748b"/></linearGradient></defs><path d="M58 6 L70 18 L43 66 L34 57 Z" fill="url(#ironBlade)" stroke="#cbd5e1" stroke-width="2"/><rect x="26" y="59" width="42" height="10" rx="5" fill="#94a3b8"/><rect x="38" y="66" width="15" height="26" rx="6" fill="#475569"/><circle cx="45" cy="82" r="7" fill="#cbd5e1"/></svg>`}
+function svgSilverDagger(){return `<svg viewBox="0 0 100 100"><defs><linearGradient id="silverGlow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset=".6" stop-color="#67e8f9"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs><path d="M57 8 L67 18 L48 58 L36 62 L42 49 Z" fill="url(#silverGlow)" stroke="#cffafe" stroke-width="2"/><path d="M50 14 L45 50" stroke="#e0f2fe" stroke-width="2"/><rect x="30" y="60" width="36" height="9" rx="5" fill="#38bdf8"/><rect x="41" y="68" width="12" height="24" rx="6" fill="#1e3a8a"/><circle cx="47" cy="82" r="6" fill="#67e8f9"/></svg>`}
+function svgAxe(){return `<svg viewBox="0 0 100 100"><path d="M49 18 H59 V90 H49 Z" fill="#92400e"/><path d="M45 12 C76 10 86 30 70 48 C61 38 54 32 45 30 Z" fill="#94a3b8" stroke="#e2e8f0" stroke-width="3"/><path d="M55 16 C28 12 18 32 34 50 C43 38 49 32 55 30 Z" fill="#64748b" stroke="#e2e8f0" stroke-width="3"/><rect x="43" y="82" width="22" height="8" rx="4" fill="#facc15"/></svg>`}
+function svgHolySword(){return `<svg viewBox="0 0 100 100"><defs><linearGradient id="holyBlade" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff7ad"/><stop offset=".5" stop-color="#f8fafc"/><stop offset="1" stop-color="#facc15"/></linearGradient><filter id="holyGlow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M50 3 L66 20 L55 66 H45 L34 20 Z" fill="url(#holyBlade)" stroke="#fef3c7" stroke-width="3" filter="url(#holyGlow)"/><path d="M50 10 V62" stroke="#ffffff" stroke-width="3"/><rect x="25" y="63" width="50" height="10" rx="5" fill="#facc15"/><rect x="42" y="70" width="16" height="24" rx="8" fill="#92400e"/><circle cx="50" cy="84" r="8" fill="#fbbf24"/><circle cx="20" cy="25" r="3" fill="#fde68a"/><circle cx="80" cy="32" r="3" fill="#fde68a"/></svg>`}
+function svgGalaxySword(){return `<svg viewBox="0 0 100 100"><defs><linearGradient id="galaxy" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f0abfc"/><stop offset=".45" stop-color="#7c3aed"/><stop offset="1" stop-color="#0f172a"/></linearGradient><filter id="galGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M50 2 L70 22 L56 68 H44 L30 22 Z" fill="url(#galaxy)" stroke="#f5d0fe" stroke-width="3" filter="url(#galGlow)"/><path d="M50 9 V66" stroke="#fde68a" stroke-width="2"/><circle cx="43" cy="28" r="2.5" fill="#fff"/><circle cx="57" cy="45" r="2" fill="#fde68a"/><circle cx="50" cy="18" r="3" fill="#f0abfc"/><rect x="24" y="65" width="52" height="10" rx="5" fill="#facc15"/><rect x="42" y="72" width="16" height="24" rx="8" fill="#4c1d95"/></svg>`}
+
+function svgClothArmor(){return `<svg viewBox="0 0 100 100"><path d="M50 10 L78 24 L70 88 L50 96 L30 88 L22 24 Z" fill="#64748b" stroke="#cbd5e1" stroke-width="3"/><path d="M35 28 H65 M33 44 H67 M31 60 H69" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/><path d="M50 18 V84" stroke="#334155" stroke-width="3"/></svg>`}
+function svgIronArmor(){return `<svg viewBox="0 0 100 100"><path d="M50 6 L82 20 L74 88 L50 96 L26 88 L18 20 Z" fill="#2563eb" stroke="#93c5fd" stroke-width="4"/><path d="M50 13 L66 27 L61 77 L50 84 L39 77 L34 27 Z" fill="#60a5fa" opacity=".75"/><path d="M37 32 H63 M35 48 H65 M33 64 H67" stroke="#dbeafe" stroke-width="4" stroke-linecap="round"/></svg>`}
+function svgBlueSteelArmor(){return `<svg viewBox="0 0 100 100"><defs><linearGradient id="blueSteel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#bfdbfe"/><stop offset=".5" stop-color="#2563eb"/><stop offset="1" stop-color="#172554"/></linearGradient></defs><path d="M50 5 L84 19 L78 90 L50 98 L22 90 L16 19 Z" fill="url(#blueSteel)" stroke="#dbeafe" stroke-width="4"/><path d="M50 16 L68 30 L63 78 L50 88 L37 78 L32 30 Z" fill="#38bdf8" opacity=".7"/><circle cx="50" cy="47" r="8" fill="#e0f2fe"/><path d="M34 33 H66 M31 62 H69" stroke="#bae6fd" stroke-width="4" stroke-linecap="round"/></svg>`}
+function svgSilverArmor(){return `<svg viewBox="0 0 100 100"><defs><linearGradient id="silverArmor" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset=".55" stop-color="#cbd5e1"/><stop offset="1" stop-color="#64748b"/></linearGradient><filter id="silverGlow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M50 4 L86 18 L78 90 L50 99 L22 90 L14 18 Z" fill="url(#silverArmor)" stroke="#f8fafc" stroke-width="4" filter="url(#silverGlow)"/><path d="M50 13 L70 31 L64 80 L50 91 L36 80 L30 31 Z" fill="#e2e8f0"/><path d="M50 18 V86 M35 42 H65 M32 62 H68" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="50" r="9" fill="#facc15"/></svg>`}
+function svgDragonArmor(){return `<svg viewBox="0 0 100 100"><defs><linearGradient id="dragonArmor" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fecaca"/><stop offset=".4" stop-color="#dc2626"/><stop offset="1" stop-color="#450a0a"/></linearGradient><filter id="redGlow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M50 4 L86 18 L78 90 L50 99 L22 90 L14 18 Z" fill="url(#dragonArmor)" stroke="#fed7aa" stroke-width="4" filter="url(#redGlow)"/><path d="M25 24 L40 34 L28 42 L44 52 L31 62 L50 86 L69 62 L56 52 L72 42 L60 34 L75 24" fill="none" stroke="#facc15" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="48" r="8" fill="#fff7ed"/></svg>`}
+
+function svgLeatherBoot(){return `<svg viewBox="0 0 100 100"><path d="M26 15 H61 V53 L84 62 V82 H20 V66 L32 58 Z" fill="#92400e" stroke="#fbbf24" stroke-width="4"/><path d="M36 24 H58 V51 L72 58 H42 L30 64 Z" fill="#b45309"/><path d="M22 82 H86" stroke="#fde68a" stroke-width="6" stroke-linecap="round"/></svg>`}
+function svgFeatherBoot(){return `<svg viewBox="0 0 100 100"><path d="M28 14 H62 V50 L84 60 V80 H18 V64 L32 56 Z" fill="#38bdf8" stroke="#bae6fd" stroke-width="4"/><path d="M64 24 C82 18 90 34 73 43 C88 41 93 54 76 61" fill="none" stroke="#e0f2fe" stroke-width="5" stroke-linecap="round"/><path d="M22 80 H86" stroke="#67e8f9" stroke-width="6" stroke-linecap="round"/></svg>`}
+function svgGuardianBoot(){return `<svg viewBox="0 0 100 100"><defs><linearGradient id="guardBoot" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fde68a"/><stop offset=".5" stop-color="#f59e0b"/><stop offset="1" stop-color="#78350f"/></linearGradient></defs><path d="M26 12 H64 V52 L88 61 V84 H18 V66 L33 58 Z" fill="url(#guardBoot)" stroke="#fff7ed" stroke-width="4"/><path d="M36 22 H61 M33 40 H64" stroke="#92400e" stroke-width="4" stroke-linecap="round"/><circle cx="48" cy="58" r="7" fill="#fef3c7"/></svg>`}
+function svgPetBlue(){return `<svg viewBox="0 0 120 120"><defs><linearGradient id="bluePet" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a5f3fc"/><stop offset=".55" stop-color="#38bdf8"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs><ellipse cx="60" cy="66" rx="38" ry="35" fill="url(#bluePet)" stroke="#cffafe" stroke-width="4"/><path d="M32 48 L19 24 L48 39 Z" fill="#38bdf8" stroke="#cffafe" stroke-width="4"/><path d="M88 48 L101 24 L72 39 Z" fill="#38bdf8" stroke="#cffafe" stroke-width="4"/><circle cx="47" cy="62" r="6" fill="#07111f"/><circle cx="73" cy="62" r="6" fill="#07111f"/><circle cx="49" cy="60" r="2" fill="#fff"/><circle cx="75" cy="60" r="2" fill="#fff"/><path d="M54 75 Q60 80 66 75" stroke="#07111f" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M23 74 C6 80 10 99 31 93" fill="none" stroke="#67e8f9" stroke-width="9" stroke-linecap="round"/><path d="M60 31 L64 39 L73 40 L66 46 L68 55 L60 50 L52 55 L54 46 L47 40 L56 39 Z" fill="#fde68a"/></svg>`}
+function svgPetFire(){return `<svg viewBox="0 0 120 120"><defs><linearGradient id="foxFur" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fed7aa"/><stop offset=".45" stop-color="#f97316"/><stop offset="1" stop-color="#dc2626"/></linearGradient><filter id="fireGlow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M28 68 C8 58 14 34 42 46 C35 58 40 70 55 76 C43 83 33 80 28 68 Z" fill="#fb923c" filter="url(#fireGlow)"/><path d="M92 68 C112 58 106 34 78 46 C85 58 80 70 65 76 C77 83 87 80 92 68 Z" fill="#fb923c" filter="url(#fireGlow)"/><path d="M60 19 L78 45 L42 45 Z" fill="#f97316" stroke="#fed7aa" stroke-width="4"/><ellipse cx="60" cy="66" rx="34" ry="36" fill="url(#foxFur)" stroke="#fed7aa" stroke-width="4"/><path d="M35 48 L25 20 L52 40 Z" fill="#f97316" stroke="#fed7aa" stroke-width="4"/><path d="M85 48 L95 20 L68 40 Z" fill="#f97316" stroke="#fed7aa" stroke-width="4"/><path d="M44 55 L55 61 L44 67 Z" fill="#111827"/><path d="M76 55 L65 61 L76 67 Z" fill="#111827"/><path d="M52 77 Q60 85 68 77" stroke="#7c2d12" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M18 86 C2 83 4 61 27 67 C43 72 45 92 28 98" fill="#ef4444" stroke="#fed7aa" stroke-width="4"/><path d="M102 86 C118 83 116 61 93 67 C77 72 75 92 92 98" fill="#ef4444" stroke="#fed7aa" stroke-width="4"/></svg>`}
+function svgPetMoon(){return `<svg viewBox="0 0 120 120"><defs><linearGradient id="moonCat" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f5d0fe"/><stop offset=".5" stop-color="#a78bfa"/><stop offset="1" stop-color="#312e81"/></linearGradient><filter id="starGlow"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><circle cx="25" cy="26" r="3" fill="#fde68a"/><circle cx="96" cy="34" r="3" fill="#fde68a"/><path d="M28 79 C3 76 7 42 36 49 C23 58 24 72 39 79 C35 82 31 82 28 79 Z" fill="#7c3aed" opacity=".75" filter="url(#starGlow)"/><ellipse cx="60" cy="67" rx="35" ry="34" fill="url(#moonCat)" stroke="#ddd6fe" stroke-width="4"/><path d="M34 49 L25 21 L51 41 Z" fill="#a78bfa" stroke="#ddd6fe" stroke-width="4"/><path d="M86 49 L95 21 L69 41 Z" fill="#a78bfa" stroke="#ddd6fe" stroke-width="4"/><path d="M43 60 Q50 54 56 61" stroke="#111827" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M77 60 Q70 54 64 61" stroke="#111827" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M54 78 Q60 84 66 78" stroke="#111827" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M91 63 C117 61 113 99 87 92" fill="none" stroke="#c4b5fd" stroke-width="10" stroke-linecap="round"/><path d="M60 29 C72 31 80 42 80 55 C74 48 66 46 57 50 C63 43 64 36 60 29 Z" fill="#fef3c7"/><path d="M24 23 L29 34 L41 35 L32 42 L35 54 L24 48 L13 54 L16 42 L7 35 L19 34 Z" fill="#fde68a" filter="url(#starGlow)"/></svg>`}
+function svgKnight(){return `<svg viewBox="0 0 120 140"><defs><linearGradient id="helmG" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset=".6" stop-color="#93c5fd"/><stop offset="1" stop-color="#2563eb"/></linearGradient><linearGradient id="armorG" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#60a5fa"/><stop offset=".55" stop-color="#2563eb"/><stop offset="1" stop-color="#1e3a8a"/></linearGradient><filter id="knGlow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><circle cx="60" cy="68" r="50" fill="rgba(59,130,246,.16)"/><path d="M37 58 C22 80 20 108 36 132 C51 122 70 122 86 132 C100 108 98 80 83 58 Z" fill="#1d4ed8" opacity=".9"/><path d="M60 13 C82 14 94 30 90 49 C86 66 71 72 60 72 C49 72 34 66 30 49 C26 30 38 14 60 13 Z" fill="url(#helmG)" stroke="#e0f2fe" stroke-width="4"/><path d="M39 39 H81 V50 C74 57 46 57 39 50 Z" fill="#0f172a"/><rect x="55" y="15" width="10" height="44" rx="5" fill="#dbeafe"/><path d="M38 58 L82 58 L94 106 C82 124 38 124 26 106 Z" fill="url(#armorG)" stroke="#bfdbfe" stroke-width="4"/><path d="M60 63 L74 103 L60 113 L46 103 Z" fill="#93c5fd" opacity=".95"/><circle cx="30" cy="68" r="13" fill="#dbeafe" stroke="#93c5fd" stroke-width="3"/><circle cx="90" cy="68" r="13" fill="#dbeafe" stroke="#93c5fd" stroke-width="3"/><g transform="rotate(26 92 82)" filter="url(#knGlow)"><path d="M92 18 L101 31 L96 94 H88 L83 31 Z" fill="#f8fafc" stroke="#bae6fd" stroke-width="2"/><rect x="76" y="90" width="32" height="8" rx="4" fill="#facc15"/><rect x="88" y="96" width="9" height="27" rx="4" fill="#92400e"/><circle cx="92.5" cy="125" r="7" fill="#f59e0b"/></g></svg>`}
+function iconSvg(icon){
+if(icon==="woodSword")return svgWoodSword();
+if(icon==="ironSword")return svgIronSword();
+if(icon==="silverDagger")return svgSilverDagger();
+if(icon==="axe")return svgAxe();
+if(icon==="holySword")return svgHolySword();
+if(icon==="galaxySword")return svgGalaxySword();
+if(icon==="clothArmor")return svgClothArmor();
+if(icon==="ironArmor")return svgIronArmor();
+if(icon==="blueSteelArmor")return svgBlueSteelArmor();
+if(icon==="silverArmor")return svgSilverArmor();
+if(icon==="dragonArmor")return svgDragonArmor();
+if(icon==="leatherBoot")return svgLeatherBoot();
+if(icon==="featherBoot")return svgFeatherBoot();
+if(icon==="guardianBoot")return svgGuardianBoot();
+if(icon==="sword")return svgIronSword();
+if(icon==="armor")return svgIronArmor();
+if(icon==="boots")return svgLeatherBoot();
+if(icon==="petBlue")return svgPetBlue();
+if(icon==="petFire")return svgPetFire();
+if(icon==="petMoon")return svgPetMoon();
+if(icon==="knight")return svgKnight();
+return svgIronSword();
+}
+function iconBox(icon,cls=""){return `<div class="icon-box ${cls}">${iconSvg(icon)}</div>`}
+function miniIcon(icon){return `<div class="mini-icon">${iconSvg(icon)}</div>`}
+function rarityFrame(r){return r==="傳說"?"legend-frame":r==="史詩"?"epic-frame":"rare-frame"}
+
+const defaultData={name:"勇者",coins:3000,stage:1,score:0,energy:0,combo:0,squat:0,roleLevel:1,roleAttack:10,roleDefense:5,dailyDay:1,lastClaim:"",equipment:{weapon:null,armor:null,boots:null},pets:[{id:1,name:"光靈幼獸",icon:"petBlue",cls:"pet-blue",rarity:"稀有",level:1,attack:12,defense:2,owned:true,active:true},{id:2,name:"焰火狐",icon:"petFire",cls:"pet-fire",rarity:"史詩",level:1,attack:25,defense:4,owned:false,active:false},{id:3,name:"星辰貓",icon:"petMoon",cls:"pet-moon",rarity:"傳說",level:1,attack:40,defense:8,owned:false,active:false}],shop:[
+{id:1,type:"weapon",name:"木製短劍",icon:"woodSword",rarity:"普通",attack:5,defense:0,cost:250,owned:false},
+{id:2,type:"armor",name:"布製護甲",icon:"clothArmor",rarity:"普通",attack:0,defense:5,cost:250,owned:false},
+{id:3,type:"boots",name:"新手皮靴",icon:"leatherBoot",rarity:"普通",attack:1,defense:2,cost:200,owned:false},
+{id:4,type:"weapon",name:"鐵製長劍",icon:"ironSword",rarity:"普通",attack:8,defense:0,cost:500,owned:false},
+{id:5,type:"armor",name:"守衛鎧甲",icon:"ironArmor",rarity:"普通",attack:0,defense:10,cost:600,owned:false},
+{id:6,type:"boots",name:"疾行戰靴",icon:"leatherBoot",rarity:"普通",attack:3,defense:3,cost:450,owned:false},
+
+{id:7,type:"weapon",name:"銀鋒短劍",icon:"silverDagger",rarity:"稀有",attack:14,defense:1,cost:950,owned:false},
+{id:8,type:"armor",name:"藍鋼胸甲",icon:"blueSteelArmor",rarity:"稀有",attack:2,defense:18,cost:1100,owned:false},
+{id:9,type:"boots",name:"輕羽長靴",icon:"featherBoot",rarity:"稀有",attack:5,defense:7,cost:850,owned:false},
+{id:10,type:"weapon",name:"騎士戰斧",icon:"axe",rarity:"稀有",attack:20,defense:0,cost:1450,owned:false},
+
+{id:11,type:"weapon",name:"聖光大劍",icon:"holySword",rarity:"史詩",attack:32,defense:4,cost:2600,owned:false},
+{id:12,type:"armor",name:"白銀聖甲",icon:"silverArmor",rarity:"史詩",attack:5,defense:36,cost:3000,owned:false},
+{id:13,type:"boots",name:"疾風聖靴",icon:"guardianBoot",rarity:"史詩",attack:12,defense:14,cost:2400,owned:false}
+],gachaItems:[{id:101,type:"weapon",name:"雷霆聖劍",icon:"holySword",rarity:"史詩",attack:28,defense:0,owned:false},{id:102,type:"armor",name:"龍鱗重甲",icon:"dragonArmor",rarity:"史詩",attack:4,defense:30,owned:false},{id:103,type:"weapon",name:"星界王劍",icon:"galaxySword",rarity:"傳說",attack:50,defense:8,owned:false},{id:104,type:"boots",name:"幻影戰靴",icon:"featherBoot",rarity:"稀有",attack:10,defense:8,owned:false}]};
+let data=JSON.parse(localStorage.getItem("squatRPG_v7"))||structuredClone(defaultData);
+let bossHp=100,maxHp=100,poseStarted=false,squatState="up",lastAttackTime=0,confirmCallback=null;
+const screens=["homeScreen","loginScreen","lobbyScreen","mapScreen","petScreen","roleScreen","equipSelectScreen","shopScreen","gachaScreen","dailyScreen","gameScreen"];
+
+function bootIcons(){document.getElementById("homeLogo").innerHTML=iconSvg("sword");document.getElementById("loginLogo").innerHTML=iconSvg("armor");document.getElementById("smallSword").innerHTML=iconSvg("sword");document.getElementById("battleSword").innerHTML=iconSvg("sword");document.getElementById("heroKnight").innerHTML=iconSvg("knight");document.getElementById("battleKnight").innerHTML=iconSvg("knight");document.getElementById("roleKnightIcon").innerHTML=iconSvg("knight");document.getElementById("gachaIcon").innerHTML=iconSvg("sword");}
+function save(){localStorage.setItem("squatRPG_v7",JSON.stringify(data));refreshTop();}
+function show(id){screens.forEach(s=>document.getElementById(s).classList.remove("active"));document.getElementById(id).classList.add("active");refreshTop();}
+function modal(title,text,icon="sword"){document.getElementById("modalTitle").textContent=title;document.getElementById("modalText").innerHTML=text;document.getElementById("modalIcon").innerHTML=iconSvg(icon);document.getElementById("modalActions").innerHTML=`<button class="main-btn" onclick="closeModal()">確認</button>`;document.getElementById("modalMask").classList.add("show");}
+function confirmModal(title,text,icon,onConfirm){confirmCallback=onConfirm;document.getElementById("modalTitle").textContent=title;document.getElementById("modalText").innerHTML=text;document.getElementById("modalIcon").innerHTML=iconSvg(icon);document.getElementById("modalActions").innerHTML=`<button class="danger-btn" onclick="closeModal()">取消</button><button class="main-btn" onclick="runConfirm()">確認</button>`;document.getElementById("modalMask").classList.add("show");}
+function runConfirm(){const cb=confirmCallback;confirmCallback=null;closeModal();if(cb)cb();}
+function closeModal(){document.getElementById("modalMask").classList.remove("show");}
+function login(){data.name=document.getElementById("nameInput").value.trim()||"勇者";save();show("lobbyScreen");}
+function refreshTop(){document.getElementById("lobbyName").textContent=data.name;document.getElementById("playerName").textContent=data.name;document.getElementById("coinText").textContent="🪙 "+data.coins;document.getElementById("playerLevelText").textContent="LV."+data.roleLevel+" 見習騎士";}
+function allItems(){return [...data.shop,...data.gachaItems]}
+function equipmentBonus(){let atk=0,def=0;Object.values(data.equipment).forEach(id=>{if(!id)return;const item=allItems().find(x=>x.id===id);if(item){atk+=item.attack;def+=item.defense;}});return {atk,def};}
+function activePet(){return data.pets.find(p=>p.active&&p.owned)||data.pets[0];}
+function petElementClass(p){
+  if(p.icon==="petFire")return "fire";
+  if(p.icon==="petMoon")return "moon";
+  return "light";
+}
+function renderBattlePet(){
+  const p=activePet();
+  const bp=document.getElementById("battlePet");
+  if(bp) bp.innerHTML=iconSvg(p.icon);
+  const ef=document.getElementById("elementEffect");
+  if(ef) ef.className="element-effect "+petElementClass(p);
+}
+function openMap(){renderMap();show("mapScreen");}
+function renderMap(){const box=document.getElementById("mapNodes");box.innerHTML="";for(let i=1;i<=20;i++){const node=document.createElement("div");node.className="stage-node";if(i%10===0)node.classList.add("elite");if(i===data.stage)node.classList.add("current");node.textContent=i%10===0?"★":i;node.style.top=(35+(i-1)*28)+"px";node.style.left=(i%2===0?235:105)+"px";box.appendChild(node);}}
+
+function openPets(){const box=document.getElementById("petList");box.innerHTML="";data.pets.forEach(p=>{const cost=p.level*250;const div=document.createElement("div");div.className="feature-card";div.innerHTML=`${iconBox(p.icon,p.cls+" "+rarityFrame(p.rarity))}<h2>${p.name} <span class="badge ${p.rarity==='傳說'?'legend':p.rarity==='史詩'?'epic':'rare'}">${p.rarity}</span></h2><div class="stat-line"><span>等級</span><b>Lv.${p.level}</b></div><div class="stat-line"><span>輔助攻擊</span><b>+${p.attack}</b></div><div class="stat-line"><span>輔助防禦</span><b>+${p.defense}</b></div><div class="stat-line"><span>升級費用</span><b class="price">${cost} 金幣</b></div><p>${p.owned?"已擁有":"尚未獲得"}</p><div class="card-row"><button class="blue-btn" onclick="setPet(${p.id})">${p.active?"出戰中":"設為出戰"}</button><button class="small-btn" onclick="confirmUpgradePet(${p.id})">升級</button></div>`;box.appendChild(div);});show("petScreen");}
+function setPet(id){const pet=data.pets.find(p=>p.id===id);if(!pet.owned){modal("尚未擁有","這隻寵物需要透過抽獎或簽到取得。",pet.icon);return;}data.pets.forEach(p=>p.active=false);pet.active=true;save();openPets();}
+function confirmUpgradePet(id){const pet=data.pets.find(p=>p.id===id);if(!pet.owned){modal("無法升級","尚未擁有這隻寵物。",pet.icon);return;}const cost=pet.level*250;confirmModal("確認升級寵物",`${pet.name} 升級需要 <b>${cost}</b> 金幣。<br>升級後：攻擊 +6，防禦 +2`,pet.icon,()=>upgradePet(id));}
+function upgradePet(id){const pet=data.pets.find(p=>p.id===id);const cost=pet.level*250;if(data.coins<cost){modal("金幣不足",`升級需要 <b>${cost}</b> 金幣，目前只有 <b>${data.coins}</b>。`,pet.icon);return;}data.coins-=cost;pet.level++;pet.attack+=6;pet.defense+=2;save();modal("寵物升級成功",`${pet.name} 升到 Lv.${pet.level}<br>攻擊 +6，防禦 +2`,pet.icon);openPets();}
+
+function openRole(){const bonus=equipmentBonus();document.getElementById("roleTitle").textContent="見習騎士 Lv."+data.roleLevel;document.getElementById("roleStats").innerHTML=`<div class="stat-line"><span>基礎攻擊</span><b>+${data.roleAttack}</b></div><div class="stat-line"><span>基礎防禦</span><b>+${data.roleDefense}</b></div><div class="stat-line"><span>裝備攻擊</span><b>+${bonus.atk}</b></div><div class="stat-line"><span>裝備防禦</span><b>+${bonus.def}</b></div><div class="stat-line"><span>升級費用</span><b class="price">${data.roleLevel*350} 金幣</b></div><p>升級後：攻擊 +5，防禦 +3</p>`;renderEquipmentSlots();show("roleScreen");}
+function renderEquipmentSlots(){const labels={weapon:"武器",armor:"盔甲",boots:"鞋子"};const icons={weapon:"ironSword",armor:"ironArmor",boots:"leatherBoot"};const box=document.getElementById("equipmentSlots");box.innerHTML="";Object.keys(labels).forEach(type=>{const id=data.equipment[type];const item=id?allItems().find(i=>i.id===id):null;const div=document.createElement("div");div.className="equip-slot";div.innerHTML=`<div class="equip-slot-title"><span>${labels[type]}</span><button class="blue-btn" onclick="openEquipSelect('${type}')">更換</button></div><div class="equip-item-row">${miniIcon(item?item.icon:icons[type])}<div><b>${item?item.name:"尚未裝備"}</b><br><span style="color:#94a3b8">${item?`攻擊 +${item.attack}，防禦 +${item.defense}`:"點選更換裝備"}</span></div></div>`;box.appendChild(div);});}
+function openEquipSelect(type){const labels={weapon:"武器",armor:"盔甲",boots:"鞋子"};document.getElementById("equipSelectTitle").textContent="選擇"+labels[type];const box=document.getElementById("equipSelectList");box.innerHTML="";const items=allItems().filter(i=>i.type===type&&i.owned);if(items.length===0){box.innerHTML=`<div class="feature-card"><p>目前沒有可裝備的${labels[type]}，可以去商城購買或測試抽獎。</p></div>`;}else{items.forEach(item=>{const div=document.createElement("div");div.className="feature-card";div.innerHTML=`${iconBox(item.icon)}<h2>${item.name} ${item.rarity?`<span class="badge ${item.rarity==='傳說'?'legend':item.rarity==='史詩'?'epic':item.rarity==='稀有'?'rare':'normal'}">${item.rarity}</span>`:'<span class="badge normal">基礎</span>'}</h2><div class="stat-line"><span>攻擊</span><b>+${item.attack}</b></div><div class="stat-line"><span>防禦</span><b>+${item.defense}</b></div><button class="main-btn" onclick="equipItem(${item.id},'select')">裝備</button>`;box.appendChild(div);});}show("equipSelectScreen");}
+function confirmUpgradeRole(){const cost=data.roleLevel*350;confirmModal("確認升級角色",`角色升級需要 <b>${cost}</b> 金幣。<br>升級後：攻擊 +5，防禦 +3`,"knight",upgradeRole);}
+function upgradeRole(){const cost=data.roleLevel*350;if(data.coins<cost){modal("金幣不足",`角色升級需要 ${cost} 金幣。`,"armor");return;}data.coins-=cost;data.roleLevel++;data.roleAttack+=5;data.roleDefense+=3;save();modal("角色升級成功",`騎士升到 Lv.${data.roleLevel}<br>攻擊 +5，防禦 +3`,"knight");openRole();}
+
+function openShop(){
+  const box=document.getElementById("shopList");
+  box.innerHTML=`<div class="feature-card"><p>商城販售普通、稀有、史詩裝備。<br><b class="legend">傳說級裝備只能透過測試抽獎取得。</b></p></div>`;
+  const order=["普通","稀有","史詩"];
+  const subtitle={普通:"數量最多，適合新手前期過渡",稀有:"中期主力，數值明顯提升",史詩:"商城最高級，數量較少且價格高"};
+  order.forEach(r=>{
+    const list=data.shop.filter(item=>item.rarity===r);
+    box.innerHTML+=`<div class="shop-section-title">${r}裝備 <span>${subtitle[r]}</span></div>`;
+    list.forEach(item=>{
+      const equipped=data.equipment[item.type]===item.id;
+      const frame=item.rarity==="史詩"?"epic-frame":item.rarity==="稀有"?"rare-frame":"common-frame";
+      const badgeClass=item.rarity==="史詩"?"epic":item.rarity==="稀有"?"rare":"normal";
+      const div=document.createElement("div");
+      div.className="feature-card";
+      div.innerHTML=`
+        ${iconBox(item.icon,frame)}
+        <h2>${item.name} <span class="badge ${badgeClass}">${item.rarity}</span></h2>
+        <div class="stat-line"><span>攻擊</span><b>+${item.attack}</b></div>
+        <div class="stat-line"><span>防禦</span><b>+${item.defense}</b></div>
+        <div class="stat-line"><span>價格</span><b class="price">${item.cost} 金幣</b></div>
+        <div class="card-row">
+          <button class="small-btn" onclick="buyItem(${item.id})">${item.owned?"已購買":"購買"}</button>
+          <button class="blue-btn" onclick="equipItem(${item.id},'shop')">${equipped?"裝備中":"裝備"}</button>
+        </div>`;
+      box.appendChild(div);
+    });
+  });
+  show("shopScreen");
+}
+function buyItem(id){const item=data.shop.find(i=>i.id===id);if(item.owned){modal("已擁有",`${item.name} 已經購買過。`,item.icon);return;}confirmModal("確認購買",`是否花費 <b>${item.cost}</b> 金幣購買 ${item.name}？<br>攻擊 +${item.attack}，防禦 +${item.defense}`,item.icon,()=>{if(data.coins<item.cost){modal("金幣不足",`購買需要 ${item.cost} 金幣。`,item.icon);return;}data.coins-=item.cost;item.owned=true;save();modal("購買成功",`${item.name}<br>攻擊 +${item.attack}，防禦 +${item.defense}`,item.icon);openShop();});}
+function equipItem(id,from){const item=allItems().find(i=>i.id===id);if(!item.owned){modal("尚未擁有","請先購買或抽到這件裝備。",item.icon);return;}data.equipment[item.type]=item.id;save();modal("裝備成功",`${item.name} 已裝備<br>攻擊 +${item.attack}，防禦 +${item.defense}`,item.icon);if(from==="shop")openShop();else if(from==="select")openRole();else openGacha();}
+
+function openGacha(){document.getElementById("gachaResult").innerHTML="";show("gachaScreen");}
+function drawGacha(){const r=Math.random()*100;let item;if(r<8)item=data.gachaItems.find(i=>i.rarity==="傳說");else if(r<22)item=data.gachaItems.find(i=>i.rarity==="史詩"&&i.id===101);else if(r<35)item=data.gachaItems.find(i=>i.rarity==="史詩"&&i.id===102);else item=data.gachaItems.find(i=>i.rarity==="稀有");item.owned=true;save();const cls=item.rarity==="傳說"?"legend":item.rarity==="史詩"?"epic":"rare";document.getElementById("gachaResult").innerHTML=`<b class="${cls}">抽到：${item.name}（${item.rarity}）</b><br>攻擊 +${item.attack}，防禦 +${item.defense}<br><button class="blue-btn" onclick="equipItem(${item.id},'gacha')">立即裝備</button>`;modal("抽獎結果",`${item.name}（${item.rarity}）<br>攻擊 +${item.attack}，防禦 +${item.defense}`,item.icon);}
+
+function today(){return new Date().toISOString().slice(0,10);}
+function openDaily(){const rewards=[100,150,250,400,600,900,"史詩焰火狐"];const box=document.getElementById("dailyList");box.innerHTML="";rewards.forEach((r,i)=>{const day=i+1;const div=document.createElement("div");div.className="daily-box";if(day===data.dailyDay)div.classList.add("current");if(day<data.dailyDay)div.classList.add("claimed");div.innerHTML=`${day===data.dailyDay?'<div class="daily-shine"></div>':''}<div class="daily-day">DAY ${day}</div><div class="daily-reward">${day===7?miniIcon("petFire"):"🪙"}</div><div>${r}</div>`;box.appendChild(div);});show("dailyScreen");}
+function claimDaily(){if(data.lastClaim===today()){modal("今日已領取","明天再回來領取下一份獎勵。","petFire");return;}const rewards=[100,150,250,400,600,900,0];const day=Math.min(data.dailyDay,7);if(day===7){data.pets[1].owned=true;modal("第七天特別獎勵","獲得史詩寵物：焰火狐！<br>攻擊 +25，防禦 +4","petFire");}else{data.coins+=rewards[day-1];modal("簽到成功",`獲得 ${rewards[day-1]} 金幣！`,"sword");}data.dailyDay=day===7?1:day+1;data.lastClaim=today();save();openDaily();}
+
+function startBattle(){const elite=data.stage%10===0;maxHp=elite?240:100+data.stage*10;bossHp=maxHp;document.getElementById("stageText").textContent="STAGE "+data.stage;document.getElementById("monster").textContent=elite?"👹":"👾";document.getElementById("enemyName").textContent=elite?"ELITE HP":"ENEMY HP";updateBattleUI();show("gameScreen");renderBattlePet();if(!poseStarted){poseStarted=true;startPose();}}
+function totalAttack(){const pet=activePet();const bonus=equipmentBonus();return data.roleAttack+bonus.atk+pet.attack;}
+function attack(){const damage=totalAttack()+(data.combo%5===4?30:0);bossHp-=damage;data.score+=10;data.energy++;data.combo++;data.squat++;data.coins+=5;document.getElementById("floatText").textContent=data.combo%5===0?"CRITICAL!":"SLASH!";playEffect();if(bossHp<=0){data.coins+=data.stage*20;data.stage++;data.combo=0;save();modal("關卡通過",`獲得 ${((data.stage-1)*20)} 金幣通關獎勵！`,"sword");renderMap();show("mapScreen");return;}save();updateBattleUI();}
+function updateBattleUI(){document.getElementById("score").textContent=data.score;document.getElementById("energy").textContent=data.energy;document.getElementById("squatCount").textContent=data.squat;document.getElementById("combo").textContent="COMBO x"+data.combo;document.getElementById("hpText").textContent=Math.max(0,bossHp)+" / "+maxHp;document.getElementById("hpFill").style.width=Math.max(0,bossHp/maxHp*100)+"%";}
+function playEffect(){
+  const e=document.getElementById("effect"),f=document.getElementById("floatText");
+  const pet=document.getElementById("battlePet"),el=document.getElementById("elementEffect");
+  e.classList.remove("show");f.classList.remove("show");
+  if(pet)pet.classList.remove("petAttack");
+  if(el)el.classList.remove("show");
+  void e.offsetWidth;
+  e.classList.add("show");f.classList.add("show");
+  if(pet)pet.classList.add("petAttack");
+  if(el)el.classList.add("show");
+}
+document.addEventListener("keydown",e=>{if(e.code==="Space"&&document.getElementById("gameScreen").classList.contains("active"))attack();});
+async function startPose(){const video=document.getElementById("video");const canvas=document.getElementById("canvas");const ctx=canvas.getContext("2d");const pose=new Pose({locateFile:file=>"https://cdn.jsdelivr.net/npm/@mediapipe/pose/"+file});pose.setOptions({modelComplexity:1,smoothLandmarks:true,minDetectionConfidence:.45,minTrackingConfidence:.45});pose.onResults(results=>{canvas.width=video.videoWidth||480;canvas.height=video.videoHeight||640;ctx.clearRect(0,0,canvas.width,canvas.height);if(results.poseLandmarks){drawConnectors(ctx,results.poseLandmarks,POSE_CONNECTIONS,{color:"#00d9ff",lineWidth:4});drawLandmarks(ctx,results.poseLandmarks,{color:"#ffd400",lineWidth:2});checkSquat(results.poseLandmarks);}});const camera=new Camera(video,{onFrame:async()=>await pose.send({image:video}),width:480,height:640});camera.start();}
+function checkSquat(lm){const lh=lm[23],lk=lm[25],la=lm[27],rh=lm[24],rk=lm[26],ra=lm[28];if(lk.visibility<.4||la.visibility<.4||rk.visibility<.4||ra.visibility<.4)return;const angle=Math.min(getAngle(lh,lk,la),getAngle(rh,rk,ra));document.getElementById("debug").textContent="膝蓋角度："+Math.round(angle)+" / 狀態："+squatState;if(squatState==="up"&&angle<140)squatState="down";if(squatState==="down"&&angle>155){const now=Date.now();if(now-lastAttackTime>700){attack();lastAttackTime=now;}squatState="up";}}
+function getAngle(a,b,c){const ab={x:a.x-b.x,y:a.y-b.y},cb={x:c.x-b.x,y:c.y-b.y};const dot=ab.x*cb.x+ab.y*cb.y;const len=Math.sqrt(ab.x**2+ab.y**2)*Math.sqrt(cb.x**2+cb.y**2);return Math.acos(Math.min(1,Math.max(-1,dot/len)))*180/Math.PI;}
+
+bootIcons();refreshTop();
+</script>
+</body>
+</html>
